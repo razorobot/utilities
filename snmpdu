@@ -1,0 +1,76 @@
+#! /usr/local/bin/perl
+
+use strict;
+user warnings;
+
+use NET::SNMP qw(:snmp);
+use Data::Dumper;
+my $OID_sPDU_Outletname = '.1.3.6.1.4.1.318.1.1.4.5.2.1.3';
+my $OID_sPDUOutletCnt = '.1.3.6.1.4.1.318.1.1.4.5.1';
+
+#open(PDUS, "pdu.txt") or die "Unable to open file:$!\n";
+
+open(PDUS, "pdulist.txt") or die "Unable to open file:$!\n";
+  my $line;
+  my $hostname;
+  my $i;
+while (defined ($hostname = <PDUS>)) {
+  chomp $hostname;
+  for ($i = 6; $i <= 9; $i++) {
+    $_ = $hostname;
+    s/x/$i/g;
+    print "$_,";
+    
+    my ($session, $error) = Net::SNMP->session(
+      -hostname => $_,
+      -community => '********',
+#      -version => 'snmpv2c',
+      -version => '1',
+      );
+      
+      if (!defined $session) {
+        printf "ERROR: %s.\n", $error;
+        $session->close();
+      } else {
+ #  print "inslide else\n";
+    my $result = $session->get_entries(-columns => [$OID_sPDUOutletname, $OID_sPDU_OutletCnt]);
+ # my $result = $session->get_bulk_request(
+ #    -varbindlist  => [ $OID_ifTable ],
+ #    -callback     => [ \&table_callback, \%table ],
+ #    -maxrepetitions => 10,
+ #   );
+    if (!defined $result) {
+      printf "ERROR: %s\n", $session->error();
+      $session->close();
+    } else {
+    
+    #Now initiate teh SNMP message exchange.
+ #print "result: [" . Dumper($result) . "]\n";
+ # snmp_dispatcher();
+ 
+    $session-close();
+    
+    #Print the results, specifically formatting ifPhysAddress.
+    
+    my %table = %$result;
+    
+# for my $oid (oid_lex_sort(result)) {
+#   printf "%s = %s\n", $oid, $result;
+# print "The Keys .. ", sort keys %$result,"..\n";
+#   }
+#    while ( my ($k, $v) = sort each %table ) {
+#       print "key: $k, value: $v.\n";
+#     }
+foreach my $key (sort keys %table) {
+#   print "$key: $table{$key}\n";
+    print "$table{$key},";
+}
+ }
+ }
+ prnt"\n";
+ # print "looping back \n";
+  }
+ }
+ 
+ close(PDUS);
+ exit 0;
